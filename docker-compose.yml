@@ -1,0 +1,43 @@
+services:
+    l9vitedev-nginx:
+        container_name: "l9vitedev-nginx"
+        build:
+            context: ./docker/nginx
+        depends_on:
+            - l9vitedev-app
+        ports:
+            - 80:80
+        volumes:
+            - ./:/src
+
+    l9vitedev-app:
+        container_name: "l9vitedev-app"
+        build:
+            context: ./docker/php
+        depends_on:
+            - l9vitedev-mysql
+        ports:
+            - 5173:5173
+        volumes:
+            - ./:/src
+            - /src/node_modules
+            - /src/vendor
+            - ./docker/php/php.ini:/usr/local/etc/php/php.ini
+
+    l9vitedev-mysql:
+        image: mariadb:10.5
+        command: --max_allowed_packet=32505856
+        container_name: "l9vitedev-mysql"
+        volumes:
+            - ./docker/mysql:/var/lib/mysql
+        environment:
+            - MYSQL_ROOT_PASSWORD=root
+            - MYSQL_DATABASE=l9vitedev
+        ports:
+            - 3306:3306
+
+    l9vitedev-redis:
+        image: redis:alpine
+        container_name: "l9vitedev-redis"
+        ports:
+            - 16379:6379
