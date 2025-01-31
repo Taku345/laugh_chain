@@ -2,19 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\NFTService;
 use Illuminate\Http\Request;
 use App\Services\StoryService;
 use Illuminate\Support\Facades\Log;
 
 class TopController extends Controller
 {
-    public function allOfficialAccountMosaics()
+    public function toppage()
     {
-        Log::debug('allOfficialAccountMosaics() start');
-
-        $allOfficialAccountMosaicsAry = StoryService::allOfficialAccountMosaics();
+        $symbol = app('symbol.config');
+        $accountNFTs = NFTService::accountNFTs($symbol['officialAccount']->address); //とりあえず公式垢の全モザイクを取得してます
         return view('top', [
-            'allOfficialAccountMosaicsAry' => $allOfficialAccountMosaicsAry,
+            'accountNFTs' => $accountNFTs,
         ]);
         // return view('top', StoryService::allOfficialAccountMosaics());
     }

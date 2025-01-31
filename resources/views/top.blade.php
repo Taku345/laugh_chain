@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>{{ config('app.name', 'Laravel') }} - トップページ</title>
-    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
 </head>
 <body>
     <header>
@@ -21,9 +22,9 @@
     <main>
         <div class="container">
             <h1>LaughChain</h1>
-            {{-- @foreach ($allOfficialAccountMosaicsAry as $key => $value)
-                <li><strong>{{ $key }}:</strong> {{ $value }}</li>
-            @endforeach --}}
+            <pre>
+                {{ print_r($accountNFTs, true) }}
+            </pre>
         </div>
     </main>
 
@@ -31,6 +32,5 @@
         {{-- <p>&copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</p> --}}
     </footer>
 
-    <script src="{{ asset('js/app.js') }}"></script>
 </body>
 </html>

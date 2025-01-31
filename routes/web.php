@@ -17,4 +17,4 @@ use App\Http\Controllers\TopController;
 Route::get('/', function () {
     return view('welcome');
 });
-Route::get('/top', [TopController::class, 'allOfficialAccountMosaics']);
+Route::get('/top', [TopController::class, 'toppage']);
