@@ -27,11 +27,10 @@ class SymbolServiceProvider extends ServiceProvider
 
             // ! 使用テストノード http://sym-test-03.opening-line.jp:3000 固定前提
             if(env('NODE_URL') == "http://sym-test-03.opening-line.jp:3000"){
-                $facade = new SymbolFacade('testnet');
+                $facade = new SymbolFacade('testnet'); //NetworkType::TEST_NET使えなかったので文字列で
             }else{
                 $facade = new SymbolFacade('ここなんて書くか謎');
             }
-            $officialAccountPrivateKey = new PrivateKey(env('OFFICIAL_ACCOUNT_PRIVATE_KEY'));
 
             // 設定とAPIインスタンスをまとめて返す
             return [
@@ -43,7 +42,8 @@ class SymbolServiceProvider extends ServiceProvider
                 'mosaicRoutesApi' => new MosaicRoutesApi($client, $config),
                 'nodeRoutesApi' => new NodeRoutesApi($client, $config),
                 'networkRoutesApi' => new NetworkRoutesApi($client, $config),
-                'officialAccount' => $facade->createAccount($officialAccountPrivateKey),
+                'officialAccount' => $facade->createAccount(new PrivateKey(env('OFFICIAL_ACCOUNT_PRIVATE_KEY'))),
+                'testUserAccount' => $facade->createAccount(new PrivateKey(env('TEST_USER_ACCOUNT_PRIVATE_KEY'))),
             ];
         });
     }
