@@ -18,10 +18,17 @@ class TopController extends Controller
 
 
         //テスト用、ユーザーにクレデンシャルモザイクを送る
+        // $testUserAccount = $symbol['testUserAccount'];
+        // $txHash = AccountService::sendUserCridencialMosaic($testUserAccount->address);
+        // Log::debug("sendUserCridencialMosaic done");
+        // Log::debug(strval($txHash));
+        //テスト用ここまで
+
+        //テスト用、ユーザーにNFTモザイクを送る
         $testUserAccount = $symbol['testUserAccount'];
-        $tmp = AccountService::sendUserCridencialMosaic($testUserAccount->address);
-        Log::debug("ddddd");
-        Log::debug(strval($tmp));
+        $txHash = NFTService::mintNFT("NFT送信テスト1だよ", $testUserAccount->address);
+        Log::debug("mintNFT done");
+        Log::debug(strval($txHash));
         //テスト用ここまで
 
         return view('top', [

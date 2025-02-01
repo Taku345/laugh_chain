@@ -73,7 +73,7 @@ class NFTService
         return $accountNFTs;
     }
 
-    public static function mintNFT(string $targetStoryAddressStr, string $targetUserAddress){
+    public static function mintNFT(string $targetStoryAddressStr, string $targetAccountAddress){
 
         // ServiceProviderからsymbol操作用クラスを取得
         $symbol = app('symbol.config');
@@ -103,7 +103,7 @@ class NFTService
             flags: $flags,
         );
 
-        // //モザイク変更
+        // モザイク変更
         $mosaicChangeTx = new EmbeddedMosaicSupplyChangeTransactionV1(
             network: new NetworkType(NetworkType::TESTNET),
             signerPublicKey: $officialAccount->publicKey, // 署名者公開鍵
@@ -116,8 +116,8 @@ class NFTService
         $nftTx = new EmbeddedTransferTransactionV1(
             network: new NetworkType(NetworkType::TESTNET),
             signerPublicKey: $officialAccount->publicKey,  // 署名者公開鍵
-            recipientAddress: $bobAddress,  // 受信者アドレス
-            message: "\0NFT送信", //NFTデータ実態
+            recipientAddress: new UnresolvedAddress($targetAccountAddress),  // 受信者アドレス
+            message: "\0$targetStoryAddressStr", //NFTデータ実態
         );
 
         // マークルハッシュの算出
@@ -147,7 +147,7 @@ class NFTService
         } catch (Exception $e) {
             echo 'Exception when calling TransactionRoutesApi->announceTransaction: ', $e->getMessage(), PHP_EOL;
         }
-
+        return $facade->hashTransaction($aggregateTx);
     }
 }
 
