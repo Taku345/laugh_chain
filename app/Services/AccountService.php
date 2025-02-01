@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use Exception;
-use SymbolSdk\Symbol\Models\MosaicSupplyRevocationTransactionV1;
 use SymbolSdk\Symbol\Models\TransferTransactionV1;
 use SymbolSdk\Symbol\Models\MosaicFlags;
 use SymbolSdk\Symbol\Models\MosaicNonce;
@@ -15,24 +14,23 @@ use SymbolSdk\Symbol\Models\Amount;
 use SymbolSdk\Symbol\IdGenerator;
 use SymbolSdk\Symbol\Models\EmbeddedMosaicDefinitionTransactionV1;
 use SymbolSdk\Symbol\Models\EmbeddedMosaicSupplyChangeTransactionV1;
-use SymbolSdk\Symbol\Models\EmbeddedTransferTransactionV1;
 use SymbolSdk\Symbol\Models\MosaicId;
-use SymbolSdk\CryptoTypes\PrivateKey;
 use SymbolSdk\Symbol\Models\AggregateCompleteTransactionV2;
 use SymbolSdk\Symbol\Models\NetworkType;
 use SymbolSdk\Symbol\Models\Timestamp;
 use SymbolSdk\Symbol\Models\UnresolvedAddress;
-use SymbolRestClient\Configuration;
-use SymbolRestClient\Api\TransactionRoutesApi;
-use SymbolRestClient\Api\TransactionStatusRoutesApi;
-use SymbolRestClient\Api\AccountRoutesApi;
-use SymbolRestClient\Api\MosaicRoutesApi;
 use Illuminate\Support\Facades\Log;
 
 
 class AccountService
 {
-    public static function NeverUseTwiceCreateUserCridencialMosaics(){ // ! 一回しか使わない前提
+    /**
+     * ユーザー資格モザイクを作成する
+     * ! 一回しか使わない前提
+     * @return Hash256|false 送信成功時Hash256型, 失敗時false
+     */
+    public static function NeverUseTwiceCreateUserCridencialMosaics()
+    {
         // ServiceProviderからsymbol操作用クラスを取得
         $symbol = app('symbol.config');
         $facade = $symbol['facade'];
@@ -79,11 +77,11 @@ class AccountService
 
         // アグリゲートTx作成
         $aggregateTx = new AggregateCompleteTransactionV2(
-        network: new NetworkType(NetworkType::TESTNET),
-        signerPublicKey: $officialAccount->publicKey,
-        deadline: new Timestamp($facade->now()->addHours(2)),
-        transactionsHash: $merkleHash,
-        transactions: $embeddedTransactions
+            network: new NetworkType(NetworkType::TESTNET),
+            signerPublicKey: $officialAccount->publicKey,
+            deadline: new Timestamp($facade->now()->addHours(2)),
+            transactionsHash: $merkleHash,
+            transactions: $embeddedTransactions
         );
         $facade->setMaxFee($aggregateTx, 100);  // 手数料
 
@@ -91,18 +89,21 @@ class AccountService
         $sig = $officialAccount->signTransaction($aggregateTx);
         $payload = $facade->attachSignature($aggregateTx, $sig);
 
-        /**
-         * アナウンス
-         */
-
+        //アナウンス
         try {
             $result = $transactionRoutesApi->announceTransaction($payload);
             echo $result . PHP_EOL;
         } catch (Exception $e) {
             echo 'Exception when calling TransactionRoutesApi->announceTransaction: ', $e->getMessage(), PHP_EOL;
         }
+        return $facade->hashTransaction($aggregateTx);
     }
 
+    /**
+     * 新規ユーザーにUserCridencialMosaicを送信する
+     * @param String $newUserAddress
+     * @return Hash256|false 送信成功時Hash256型, 失敗時false
+     */
     public static function sendUserCridencialMosaic(String $newUserAddress)
     {
         // ServiceProviderからsymbol操作用クラスを取得
@@ -110,9 +111,7 @@ class AccountService
         $facade = $symbol['facade'];
         $transactionRoutesApi = $symbol['transactionRoutesApi'];
         $accountRoutesApi = $symbol['accountRoutesApi'];
-        $mosaicRoutesApi = $symbol['mosaicRoutesApi'];
         $officialAccount = $symbol['officialAccount'];
-        $testUserAccount = $symbol['testUserAccount'];
 
         // $newUserAddressのユーザーが既にUserCridencialMosaicを持っていないことを確認
         $isExistAccountInfo = false;
@@ -124,37 +123,32 @@ class AccountService
             // ここはSSS Extentionが作成したアカウントをチェーンに認識されるまでやってくれてるか確認してから考える
             // もしかしたらUnresolvedAddressクラスを使うべき？そっちの方が楽かも
         } catch (\Exception $e) {
-            //アカウントが存在しないor一度もTxに関わっていないか判別方法判別方法を知らないので、暫定で後者とみなす
+            //アカウントが存在しないor一度もTxに関わっていないか判別方法を知らないので、暫定で後者とみなす
         }
 
-        //$account
         if($isExistAccountInfo){
             foreach($accountInfo->getAccount()->getMosaics() as $mosaic) {
-                //TODO : 以下の条件分が働いてない、多分16か10か文字列かの問題、あとアドレスってデータ構造の中に二つあるからそれかも
-                if($mosaic->getId() == env('USER_CREDENTIAL_MOSAIC_ID')) return throw New Exception("既に同じモザイクを持っています");
+                if(strval($mosaic->getId()) == env('USER_CREDENTIAL_MOSAIC_ID')) return false;
             }
         }
-
-        $temp = hexdec(env('USER_CREDENTIAL_MOSAIC_ID'));
 
         // モザイク送信
         $messageData = "\0このモザイクは所有アカウントがLaughChainユーザーであることを示します";
         $transferTransaction = new TransferTransactionV1(
-        network: new NetworkType(NetworkType::TESTNET),
-        signerPublicKey: $officialAccount->publicKey,
-        deadline: new Timestamp($facade->now()->addHours(2)),
-        recipientAddress: New UnresolvedAddress($newUserAddress),
-        mosaics: [
-            new UnresolvedMosaic(
-            mosaicId: new UnresolvedMosaicId(env('USER_CREDENTIAL_MOSAIC_ID')),
-            amount: new Amount(1)
-            )
-        ],
-        message: $messageData
+            network: new NetworkType(NetworkType::TESTNET),
+            signerPublicKey: $officialAccount->publicKey,
+            deadline: new Timestamp($facade->now()->addHours(2)),
+            recipientAddress: New UnresolvedAddress($newUserAddress),
+            mosaics: [
+                new UnresolvedMosaic(
+                    mosaicId: new UnresolvedMosaicId("0x" . env('USER_CREDENTIAL_MOSAIC_ID')),
+                    amount: new Amount(1)
+                )
+            ],
+            message: $messageData
         );
 
         $facade->setMaxFee($transferTransaction, 100);  // 手数料
-
         $signature = $officialAccount->signTransaction($transferTransaction);
         $payload = $facade->attachSignature($transferTransaction, $signature);
 
@@ -165,19 +159,18 @@ class AccountService
             echo 'Exception when calling TransactionRoutesApi->announceTransaction: ', $e->getMessage(), PHP_EOL;
         }
 
-        // Log::debug("address表示");
-        // Log::debug($officialAccount->address);
-        // Log::debug($testUserAccount->address);
-
-        return true;
-
+        return $facade->hashTransaction($transferTransaction);
     }
 
+    /**
+     * アカウントが持つ全モザイクを取得する
+     * @param String $accountAddressStr
+     * @return array|null モザイク情報の配列, アカウントが存在しないor一度もTxに関わっていない場合はnull
+     */
     public static function getAccountMosaics(String $accountAddressStr)
     {
         // ServiceProviderからsymbol操作用クラスを取得
         $symbol = app('symbol.config');
-        $facade = $symbol['facade'];
         $accountRoutesApi = $symbol['accountRoutesApi'];
         $mosaicRoutesApi = $symbol['mosaicRoutesApi'];
 
@@ -185,18 +178,14 @@ class AccountService
             $accountInfo = $accountRoutesApi->getAccountInfo($accountAddressStr);
         } catch (\Exception $e) {
             Log::error($e);
-            return null; // アカウントが存在しない場合はnullを返すのでこれで判別してください
+            return null;
         }
 
         $accountMosaics = [];
         foreach($accountInfo->getAccount()->getMosaics() as $mosaic) {
-
             //getMosaics()で得られるモザイク情報はid, amountしかないため詳細情報を取得
             $mosaicInfo = $mosaicRoutesApi->getMosaic($mosaic->getId());
-
-            if (true) { // TODO:NFTのみを取得する条件を追加
-                $accountMosaics[] = $mosaicInfo;
-            }
+            $accountMosaics[] = $mosaicInfo;
         }
         return $accountMosaics;
     }

@@ -19,7 +19,9 @@ class TopController extends Controller
 
         //テスト用、ユーザーにクレデンシャルモザイクを送る
         $testUserAccount = $symbol['testUserAccount'];
-        AccountService::sendUserCridencialMosaic($testUserAccount->address);
+        $tmp = AccountService::sendUserCridencialMosaic($testUserAccount->address);
+        Log::debug("ddddd");
+        Log::debug(strval($tmp));
         //テスト用ここまで
 
         return view('top', [

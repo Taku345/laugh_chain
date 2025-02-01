@@ -65,7 +65,7 @@ class NFTService
             //getMosaics()で得られるモザイク情報はid, amountしかないため詳細情報を取得
             $mosaicInfo = $mosaicRoutesApi->getMosaic($mosaic->getId());
 
-            if (true) { // TODO:NFTのみを取得する条件を追加
+            if (true) { // TODO:LaughChainのNFTのみを取得する条件を追加
                 throw new Exception('まだ未完成の関数だよ');
                 $accountNFTs[] = $mosaicInfo;
             }
